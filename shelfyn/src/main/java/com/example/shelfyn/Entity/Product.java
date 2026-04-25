@@ -1,11 +1,13 @@
-package com.example.shelfyn.entity;
+package com.example.shelfyn.Entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
+
 import java.time.LocalDate;
 
+@Data
 @Entity
 @Table(name = "product")
-@Lombok
 public class Product {
 
     @Id
