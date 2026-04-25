@@ -16,6 +16,7 @@ public class ProductMapper {
         res.setPrice(product.getPrice());
         res.setFavorite(product.isFavorite());
         res.setStatus(getStatus(product));
+        res.setExpiryDate(product.getExpiryDate());
 
         return res;
     }
