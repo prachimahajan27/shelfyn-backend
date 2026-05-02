@@ -1,9 +1,11 @@
 package com.example.shelfyn.Service;
 import com.example.shelfyn.Entity.Product;
+import com.example.shelfyn.Entity.User;
 import com.example.shelfyn.mapper.ProductMapper;
 import com.example.shelfyn.model.ProductResponse;
 import com.example.shelfyn.model.ProductStatus;
 import com.example.shelfyn.repository.ProductRepository;
+import com.example.shelfyn.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,26 +19,36 @@ public class ProductService {
 
     private final ProductRepository repository;
 
-    public Product addProduct(Product product) {
+    private final UserRepository userRepository;
+
+    public Product addProduct(Product product , Long userid) {
+        User user = userRepository.findById(userid).orElseThrow(() -> new RuntimeException("User not found"));
+        product.setUser(user);
         return repository.save(product);
     }
 
-    public List<ProductResponse> getAllProducts() {
-        return repository.findAll()
+    public List<ProductResponse> getAllProducts(Long userid ) {
+         userRepository.findById(userid).orElseThrow();
+
+
+        return repository.findByUserId(userid)
                 .stream()
                 .map(ProductMapper::toResponse)
                 .toList();
     }
 
-    public ProductResponse getProductById(Long id) {
-        Product product = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+    public ProductResponse getProductById(Long id , Long userid) {
+        User user = userRepository.findById(userid).orElseThrow(() -> new RuntimeException("User not found"));
+
+        Product product = repository.findByIdAndUserId(id,userid).orElseThrow(() -> new RuntimeException("Product not found"));;
+
+
 
         return ProductMapper.toResponse(product);
     }
 
-    public Product updateProduct(Long id, Product updated) {
-        Product product = repository.findById(id)
+    public Product updateProduct(Long id, Long userid,Product updated) {
+        Product product = repository.findByIdAndUserId(id,userid)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
         product.setName(updated.getName());
@@ -49,19 +61,21 @@ public class ProductService {
         return repository.save(product);
     }
 
-    public void deleteProduct(Long id) {
-        repository.deleteById(id);
+    public void deleteProduct(Long id , Long userid) {
+        repository.findByIdAndUserId(id,userid)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        repository.deleteByIdAndUserId(id,userid);
     }
 
-    public Product toggleFavorite(Long id) {
-        Product product = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Not found"));
+    public Product toggleFavorite(Long id , Long userid) {
+        Product product = repository.findByIdAndUserId(id,userid)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
 
         product.setFavorite(!product.isFavorite());
         return repository.save(product);
     }
-    public Map<String, Long> getStats() {
-        List<Product> products = repository.findAll();
+    public Map<String, Long> getStats(Long userid) {
+        List<Product> products = repository.findByUserId(userid);
 
         long total = products.size();
 
@@ -80,7 +94,7 @@ public class ProductService {
         Map<String, Long> stats = new HashMap<>();
         stats.put("total", total);
         stats.put("expired", expired);
-        stats.put("expiring", expiring);
+        stats.put("expiringSoon", expiring);
         stats.put("safe", safe);
 
         return stats;
